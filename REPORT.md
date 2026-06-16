@@ -122,5 +122,5 @@ Alternatively, bind fee release to verified delivery so executor cannot retain l
 Severity
 High — zero-privilege access control bypass on core protocol infrastructure, 
 cross-chain, no recovery, proven on mainnet fork with real transaction data. 
-Economic loss is conditional on attacker targeting a message with lzReceive.value > 0 
+Economic loss is conditional on attacker targeting a message with `lzReceive.value > 0` 
 which is demonstrably common across LayerZero's production traffic.
