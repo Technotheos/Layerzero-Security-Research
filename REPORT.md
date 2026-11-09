@@ -72,10 +72,13 @@ global int   storage::pointer;
             save_data();
         }
     }
-}```
-# exploit.ts :
+}
+```
 
-``
+
+**exploit.ts :**
+
+```
 import { Blockchain } from '@ton/sandbox';
 import { Address, Cell, beginCell, toNano, Dictionary } from '@ton/core';
 import { compileFunc } from '@ton-community/func-js';
@@ -158,10 +161,20 @@ async function runExploit() {
     }
 }
 runExploit().catch(console.error);
-``
--Execution and Results (exploit.ts) : The impact was demonstrated using @ton/sandbox to simulate a real TVM execution environment. The exploit script performs a "Lap Attack" by committing Nonce 1 and then immediately injecting Nonce 1025.
--Execution Steps :
+```
 
+**Definitive Code Proof of Flaw :** To provide complete architectural context regarding the underlying `DeterministicInsertionCircularQueue.fc` vulnerability submitted in the main report, the specific reachability and permanent state-bricking mechanisms within the production channel package are structured as follows:
+
+1.Acknowledged Risk without Enforcement : In `storage.fc`, the protocol defines `Channel::MAX_SEND_SLOTS = MAX_CELL_BITS` and explicitly comments that this value "must be low to avoid permanent bricking".
+
+2.Missing Validation Gate : Despite recognizing this risk, `handler.fc -> channelSend()` increments `curRequestId` linearly without asserting that `(curRequestId - oldest_pending_id) <= Channel::MAX_SEND_SLOTS.`
+
+3.Storage Corruption Mechanism : Due to the missing validation gate, continuous execution causes the sequence keys to wrap around the physical 1024-slot circular queue capacity. The nested layout configuration inside `Channel::setSendRequestQueueAndLastSendRequestId` ensures that when the queue tree degrades, the global contract storage becomes un-parsable, resulting in a permanent protocol-wide Denial of Service (DoS).
+
+
+**Execution and Results (exploit.ts) :** The impact was demonstrated using @ton/sandbox to simulate a real TVM execution environment. The exploit script performs a "Lap Attack" by committing Nonce 1 and then immediately injecting Nonce 1025.
+
+**Execution Steps :**
     1. Initial State: Nonce 1 is committed to Slot 1.
     2.The Lap: Nonce 1025 is committed. Since 1025 mod{1024} = 1, the TVM targets the same storage slot.
     3.The Result: The storage structure is corrupted. Attempts to read the original Nonce 1 data fail with a "No more references" error.
